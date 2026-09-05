@@ -1,0 +1,15 @@
+{
+  "name": "json-schema-visualizer",
+  "version": "1.0.0",
+  "description": "Interactive visual JSON tree explorer, schema generator, and TypeScript interface exporter",
+  "main": "index.js",
+  "bin": {
+    "json-viz": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js --web"
+  },
+  "keywords": ["json", "schema", "typescript", "visualizer", "tree-explorer", "developer-tools"],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Schema & Type Visualizer</title>
+  <style>
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --bg: #090d16;
+      --bg-card: rgba(18, 26, 44, 0.75);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, var(--bg) 75%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .actions { display: flex; gap: 10px; }
+    button {
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+    button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.35);
+    }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 16px;
+      padding: 16px 28px;
+      min-height: 0;
+    }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+    .panel-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 480px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      padding: 18px;
+      resize: none;
+      outline: none;
+    }
+    .tabs { display: flex; gap: 4px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 8px; }
+    .tab {
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+    .tab.active { background: var(--primary); color: white; }
+    .output-pane {
+      flex: 1;
+      padding: 18px;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      background: #0d1117;
+    }
+    .tree-node { margin-left: 18px; }
+    .tree-key { color: #79c0ff; font-weight: 600; }
+    .tree-type { color: #ff7b72; font-size: 0.8rem; margin-left: 6px; }
+    .tree-val-str { color: #a5d6ff; }
+    .tree-val-num { color: #d2a8ff; }
+    .tree-val-bool { color: #ff7b72; }
+    .tree-val-null { color: #8b949e; font-style: italic; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span>🌳 JSON Schema Visualizer</span>
+      <span class="logo-badge">Studio</span>
+    </div>
+    <div class="actions">
+      <button class="primary" id="copyBtn">📋 Copy Output</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel">
+      <div class="panel-header">
+        <span>Raw JSON Input</span>
+        <span id="validIndicator" style="color: #34d399;">✓ Valid JSON</span>
+      </div>
+      <textarea id="jsonInput"></textarea>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="tabs">
+          <button class="tab active" data-view="tree">Interactive Tree</button>
+          <button class="tab" data-view="ts">TypeScript Interface</button>
+          <button class="tab" data-view="schema">JSON Schema</button>
+        </div>
+        <span>Generated Output</span>
+      </div>
+      <div class="output-pane" id="outputPane"></div>
+    </div>
+  </main>
+
+  <script>
+    const sampleJSON = {
+      "user": {
+        "id": 1042,
+        "name": "Satyam Sethi",
+        "email": "satyam@example.com",
+        "roles": ["admin", "developer"],
+        "isActive": true,
+        "profile": {
+          "title": "Software Engineer",
+          "reputation": 4.95,
+          "social": {
+            "github": "Satyam-h-Sethi",
+            "twitter": null
+          }
+        }
+      }
+    };
+
+    let activeTab = 'tree';
+    const jsonInput = document.getElementById('jsonInput');
+    const outputPane = document.getElementById('outputPane');
+    const validIndicator = document.getElementById('validIndicator');
+
+    function renderTree(obj) {
+      if (obj === null) return `<span class="tree-val-null">null</span>`;
+      if (typeof obj === 'string') return `<span class="tree-val-str">"${escapeHtml(obj)}"</span>`;
+      if (typeof obj === 'number') return `<span class="tree-val-num">${obj}</span>`;
+      if (typeof obj === 'boolean') return `<span class="tree-val-bool">${obj}</span>`;
+      if (Array.isArray(obj)) {
+        if (obj.length === 0) return '[]';
+        return `[<div class="tree-node">${obj.map((item, idx) => `<div><span style="color:#8b949e;">${idx}:</span> ${renderTree(item)}</div>`).join('')}</div>]`;
+      }
+      if (typeof obj === 'object') {
+        const keys = Object.keys(obj);
+        if (keys.length === 0) return '{}';
+        return `{<div class="tree-node">${keys.map(k => `<div><span class="tree-key">"${escapeHtml(k)}"</span><span class="tree-type">(${getType(obj[k])})</span>: ${renderTree(obj[k])}</div>`).join('')}</div>}`;
+      }
+      return String(obj);
+    }
+
+    function getType(val) {
+      if (val === null) return 'null';
+      if (Array.isArray(val)) return 'array';
+      return typeof val;
+    }
+
+    function generateTS(obj, name = 'RootObject') {
+      function parseType(val, indent = '  ') {
+        if (val === null) return 'null';
+        if (Array.isArray(val)) {
+          if (val.length === 0) return 'any[]';
+          return `${parseType(val[0], indent)}[]`;
+        }
+        if (typeof val === 'object') {
+          let lines = ['{'];
+          for (const key of Object.keys(val)) {
+            lines.push(`${indent}  ${key}: ${parseType(val[key], indent + '  ')};`);
+          }
+          lines.push(`${indent}}`);
+          return lines.join('\n');
+        }
+        return typeof val;
+      }
+      return `export interface ${name} ${parseType(obj, '')}`;
+    }
+
+    function generateSchema(obj) {
+      function buildSchema(val) {
+        if (val === null) return { type: 'null' };
+        if (Array.isArray(val)) {
+          return { type: 'array', items: val.length ? buildSchema(val[0]) : {} };
+        }
+        if (typeof val === 'object') {
+          const props = {};
+          for (const k of Object.keys(val)) props[k] = buildSchema(val[k]);
+          return { type: 'object', properties: props, required: Object.keys(val) };
+        }
+        return { type: typeof val };
+      }
+      return JSON.stringify({ "$schema": "http://json-schema.org/draft-07/schema#", ...buildSchema(obj) }, null, 2);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function update() {
+      try {
+        const parsed = JSON.parse(jsonInput.value);
+        validIndicator.textContent = '✓ Valid JSON';
+        validIndicator.style.color = '#34d399';
+
+        if (activeTab === 'tree') {
+          outputPane.innerHTML = `<div style="color: #c9d1d9;">${renderTree(parsed)}</div>`;
+        } else if (activeTab === 'ts') {
+          outputPane.innerHTML = `<pre style="color: #79c0ff; white-space: pre-wrap;">${escapeHtml(generateTS(parsed))}</pre>`;
+        } else if (activeTab === 'schema') {
+          outputPane.innerHTML = `<pre style="color: #7ee787; white-space: pre-wrap;">${escapeHtml(generateSchema(parsed))}</pre>`;
+        }
+      } catch (err) {
+        validIndicator.textContent = '✗ Invalid JSON';
+        validIndicator.style.color = '#ef4444';
+        outputPane.innerHTML = `<div style="color: #fca5a5;">JSON Syntax Error: ${err.message}</div>`;
+      }
+    }
+
+    jsonInput.value = JSON.stringify(sampleJSON, null, 2);
+    update();
+    jsonInput.addEventListener('input', update);
+
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        t.classList.add('active');
+        activeTab = t.getAttribute('data-view');
+        update();
+      });
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      navigator.clipboard.writeText(outputPane.innerText).then(() => alert('Copied output!'));
+    });
+  </script>
+</body>
+</html>
