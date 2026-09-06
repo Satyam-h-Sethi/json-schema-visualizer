@@ -1,6 +1,14 @@
 # json-schema-visualizer
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-schema.satyamsethi.dpdns.org-3b82f6?style=for-the-badge&logo=cloudflare&logoColor=white)](https://schema.satyamsethi.dpdns.org)
+[![Cloudflare Pages](https://img.shields.io/badge/Cloudflare_Pages-Deployment-F38020?style=for-the-badge&logo=cloudflarepages&logoColor=white)](https://json-schema-visualizer.pages.dev)
+
 An interactive developer tool to visually explore nested JSON objects, generate strict TypeScript interfaces, and export valid JSON Schema definitions in real time.
+
+## 🌐 Live Demo
+
+- **Primary Custom Domain**: [https://schema.satyamsethi.dpdns.org](https://schema.satyamsethi.dpdns.org)
+- **Cloudflare Pages Direct**: [https://json-schema-visualizer.pages.dev](https://json-schema-visualizer.pages.dev)
 
 ## What it does
 
